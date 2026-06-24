@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="栄養ログ">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#121212" id="metaTheme">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%E6%A0%84%E9%A4%8A%E3%83%AD%E3%82%B0%22%2C%22short_name%22%3A%22%E6%A0%84%E9%A4%8A%E3%83%AD%E3%82%B0%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23121212%22%2C%22start_url%22%3A%22.%22%7D">
+<title>栄養ログ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+/* ── ACCENT COLORS ── */
+:root { --accent:#4f6ef7; --accent2:#7c3aed; }
+
+[data-theme="dark"] {
+  --bg:#121212; --bg2:#1a1a1a; --bg3:#202020; --bg4:#242424;
+  --border:#2a2a2a; --border2:#333;
+  --text:#e5e5e5; --text2:#b3b3b3; --text3:#7a7a7a;
+  --del:#ff5c5c; --nav:#161616;
+  --sh:0 4px 16px rgba(0,0,0,.6); --sh2:0 2px 8px rgba(0,0,0,.4);
+  --r:14px; --rs:12px;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+[data-theme="light"] {
+  --bg:#f7f8fc; --bg2:#ffffff; --bg3:#f0f2f8; --bg4:#e8eaf2;
+  --border:#e2e5f0; --border2:#d5d8e8;
+  --text:#1a1d2e; --text2:#6b7280; --text3:#a0a8c0;
+  --del:#d93c3c; --nav:#ffffff;
+  --sh:0 4px 16px rgba(79,110,247,.08); --sh2:0 2px 8px rgba(0,0,0,.06);
+  --r:14px; --rs:12px;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { height:100%; overflow:hidden; }
+body { font-family:'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif; background:var(--bg); color:var(--text); height:100%; overflow:hidden; -webkit-font-smoothing:antialiased; transition:background .2s,color .2s; }
+button { font-family:inherit; border:none; cursor:pointer; background:none; color:inherit; }
+input,textarea,select { font-family:inherit; }
+a { color:var(--accent); text-decoration:none; }
+
+.shell { display:flex; flex-direction:column; height:100dvh; max-width:480px; margin:0 auto; overflow:hidden; }
+.pages { flex:1; overflow:hidden; position:relative; min-height:0; }
+.page { position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; opacity:0; pointer-events:none; transform:translateY(6px); transition:opacity .2s,transform .2s; }
+.page.active { opacity:1; pointer-events:auto; transform:translateY(0); }
+.page::-webkit-scrollbar { width:0; }
+
+/* FOOTER NAV */
+.footer { flex-shrink:0; background:var(--nav); border-top:1px solid var(--border); display:flex; padding:6px 2px; padding-bottom:max(6px,env(safe-area-inset-bottom)); }
+.nav-it { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:5px 2px; border-radius:10px; color:var(--text3); font-family:'Syne',sans-serif; font-size:9px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; transition:color .15s; }
+.nav-it:active { background:var(--bg3); }
+.nav-it.active { color:var(--accent); }
+.nav-ic { width:22px; height:22px; display:flex; align-items:center; justify-content:center; }
+
+/* HEADER */
+.pg-hd { display:flex; align-items:center; justify-content:space-between; padding:0 16px; height:calc(52px + env(safe-area-inset-top)); padding-top:env(safe-area-inset-top); border-bottom:1px solid var(--border); background:var(--bg); flex-shrink:0; position:sticky; top:0; z-index:10; }
+.app-nm { font-family:'Syne',sans-serif; font-weight:800; font-size:19px; letter-spacing:-.5px; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.pg-ti { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; letter-spacing:-.3px; color:var(--text); }
+.hd-right { display:flex; gap:6px; align-items:center; }
+.icon-btn { width:36px; height:36px; border-radius:50%; border:1px solid var(--border2); background:var(--bg2); color:var(--text2); display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.icon-btn:active { transform:scale(.9); background:var(--bg3); }
+.install-btn { display:none; align-items:center; gap:5px; padding:5px 11px; border-radius:20px; background:color-mix(in srgb,var(--accent) 12%,transparent); border:1px solid color-mix(in srgb,var(--accent) 35%,transparent); color:var(--accent); font-size:11px; font-family:'Syne',sans-serif; font-weight:700; }
+.install-btn.show { display:flex; }
+
+/* ── HOME PAGE ── */
+#pg-home { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+.home-scroll { flex:1; overflow-y:auto; padding:12px 14px 16px; }
+.home-scroll::-webkit-scrollbar { width:0; }
+
+/* Date bar */
+.date-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.date-main { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:var(--text); }
+.date-sub { font-size:11px; color:var(--text3); }
+.btn-nutrient-sel { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:5px 12px; font-size:11px; font-family:'Syne',sans-serif; font-weight:700; color:var(--text2); transition:all .15s; display:flex; align-items:center; gap:5px; }
+.btn-nutrient-sel:active { color:var(--accent); border-color:var(--accent); }
+
+/* Paste card */
+.paste-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:14px; margin-bottom:10px; box-shadow:var(--sh2); }
+.paste-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin-bottom:10px; }
+.paste-btn { width:100%; padding:13px; border-radius:var(--rs); background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .15s; box-shadow:0 4px 18px color-mix(in srgb,var(--accent) 35%,transparent); }
+.paste-btn:active { opacity:.88; transform:scale(.98); }
+.paste-hint { font-size:11px; color:var(--text3); margin-top:8px; text-align:center; line-height:1.5; }
+
+/* Gauge card */
+.gauge-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; box-shadow:var(--sh2); }
+.gauge-header { padding:12px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.gauge-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:var(--text); }
+.gauge-date-badge { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); background:var(--bg3); padding:3px 9px; border-radius:10px; }
+.gauge-tabs { display:flex; border-bottom:1px solid var(--border); }
+.gtab { flex:1; background:none; border:none; padding:10px 0; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.05em; color:var(--text3); border-bottom:2px solid transparent; transition:all .15s; }
+.gtab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.gauge-body { padding:14px; }
+canvas { max-width:100%; }
+.no-data-msg { text-align:center; padding:36px 20px; color:var(--text3); font-size:13px; line-height:1.7; }
+.gauge-legend { display:flex; gap:12px; flex-wrap:wrap; padding:8px 14px 10px; font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); border-top:1px solid var(--border); }
+.lg-item { display:flex; align-items:center; gap:5px; }
+.lg-dot { width:8px; height:8px; border-radius:2px; }
+.lg-blue { background:#3b82f6; }
+.lg-green { background:#10b981; }
+.lg-orange { background:#f59e0b; }
+
+/* ── RECORDS PAGE ── */
+#pg-rec { display:flex; flex-direction:column; height:100%; overflow:hidden; position:relative; }
+.rl-wrap { flex:1; overflow-y:auto; padding:8px 14px; -webkit-overflow-scrolling:touch; }
+.rl-wrap::-webkit-scrollbar { width:0; }
+.rec-dg-hd { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); padding:10px 2px 5px; }
+.rec-dg-hd:first-child { padding-top:2px; }
+
+/* Entry card */
+.entry-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--rs); overflow:hidden; margin-bottom:8px; }
+.entry-row { display:flex; align-items:center; gap:10px; padding:12px 13px; }
+.entry-row+.entry-row { border-top:1px solid var(--border); }
+.entry-time { font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--text); }
+.entry-summary { flex:1; font-size:12px; color:var(--text2); }
+.entry-summary strong { color:var(--accent); font-family:'DM Mono',monospace; }
+.entry-actions { display:flex; gap:4px; }
+.eib { width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:var(--bg3); display:flex; align-items:center; justify-content:center; color:var(--text2); transition:all .15s; }
+.eib:active { transform:scale(.88); }
+.eib.ed:active { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 40%,transparent); }
+.eib.dl:active { color:var(--del); border-color:rgba(255,92,92,.3); }
+.empty-state { text-align:center; padding:56px 20px; color:var(--text3); font-size:13px; line-height:1.8; }
+.rec-fab { position:absolute; right:14px; bottom:calc(8px + env(safe-area-inset-bottom)); width:44px; height:44px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 3px 14px color-mix(in srgb,var(--accent) 45%,transparent); transition:all .2s; z-index:6; }
+.rec-fab:active { transform:scale(.94); }
+
+/* ── REPORT PAGE ── */
+#pg-rep { overflow-y:auto; }
+#pg-rep::-webkit-scrollbar { width:0; }
+.rep-nav { display:flex; align-items:center; justify-content:space-between; padding:0 16px; height:calc(52px + env(safe-area-inset-top)); padding-top:env(safe-area-inset-top); border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:10; }
+.rep-nav-btn { width:30px; height:30px; border-radius:50%; background:var(--bg2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text2); transition:all .15s; }
+.rep-nav-btn:active { transform:scale(.9); background:var(--bg3); }
+.rep-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+.rep-content { padding:10px 14px 24px; }
+.rep-hero { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:8px; }
+.rep-hcard { background:var(--bg2); border:1px solid var(--border); border-radius:var(--rs); padding:13px; }
+.rep-hl { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text2); margin-bottom:5px; }
+.rep-hv { font-family:'DM Mono',monospace; font-size:20px; font-weight:500; color:var(--text); line-height:1; }
+.rep-hsub { font-size:10px; color:var(--text3); margin-top:3px; }
+.rep-chart-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--rs); padding:14px; margin-bottom:8px; }
+.rep-chart-title { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
+.rep-bars { display:flex; align-items:flex-end; gap:5px; height:80px; }
+.rep-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; }
+.rep-bar-bg { width:100%; flex:1; background:var(--bg3); border-radius:4px; position:relative; overflow:hidden; }
+.rep-bar-fill { position:absolute; bottom:0; left:0; right:0; border-radius:4px; background:linear-gradient(0deg,var(--accent),var(--accent2)); }
+.rep-bar-fill.today { background:linear-gradient(0deg,#f59e0b,#fbbf24); }
+.rep-bar-lbl { font-family:'DM Mono',monospace; font-size:8px; color:var(--text2); }
+.rep-bar-val { font-family:'DM Mono',monospace; font-size:8px; color:var(--text3); min-height:10px; }
+.rep-table-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--rs); overflow:hidden; margin-bottom:8px; }
+.rep-table-title { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text2); padding:11px 14px 7px; border-bottom:1px solid var(--border); }
+.rep-day-group { border-bottom:1px solid var(--border); }
+.rep-day-group:last-child { border-bottom:none; }
+.rep-day-hd { display:flex; align-items:center; justify-content:space-between; padding:7px 14px 4px; background:var(--bg3); }
+.rep-day-name { font-family:'DM Mono',monospace; font-size:10px; color:var(--text2); }
+.rep-day-kcal { font-family:'DM Mono',monospace; font-size:11px; color:var(--accent); }
+.rep-sess-row { display:grid; grid-template-columns:auto 1fr auto; gap:8px; padding:7px 14px 7px 22px; border-top:1px solid var(--border); align-items:center; }
+.rep-sess-row:first-of-type { border-top:none; }
+.rep-cell { font-family:'DM Mono',monospace; font-size:12px; color:var(--text); }
+.rep-cell.miss { color:var(--text3); }
+.rep-cell.kcal { color:var(--accent); text-align:right; }
+.csv-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:calc(100% - 28px); margin:6px 14px 8px; padding:12px; border-radius:var(--rs); border:1px solid var(--border); background:var(--bg2); color:var(--text2); font-size:13px; font-weight:500; transition:all .15s; }
+.csv-btn:active { background:var(--bg3); color:var(--text); }
+
+/* ── MY PAGE ── */
+#pg-my { overflow-y:auto; }
+#pg-my::-webkit-scrollbar { width:0; }
+.my-av-wrap { text-align:center; padding:20px 0 16px; }
+.my-av { width:68px; height:68px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; position:relative; box-shadow:0 4px 18px color-mix(in srgb,var(--accent) 35%,transparent); }
+.my-av svg { color:#fff; }
+.my-un { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+.my-sb { font-size:12px; color:var(--text3); margin-top:2px; }
+.my-sec { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; margin:0 14px 8px; }
+.my-st { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); padding:10px 14px 8px; border-bottom:1px solid var(--border); }
+.my-sg { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); }
+.my-sv { background:var(--bg2); padding:13px; text-align:center; }
+.my-svv { font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--text); margin-bottom:3px; }
+.my-svl { font-size:10px; color:var(--text3); }
+.my-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text); gap:8px; }
+.my-row:last-child { border-bottom:none; }
+.my-rv { font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); }
+.my-row.tap { cursor:pointer; transition:background .15s; }
+.my-row.tap:active { background:var(--bg3); }
+.my-row.danger { color:var(--del); }
+.tog { width:44px; height:25px; border-radius:13px; background:var(--bg4); border:1px solid var(--border2); cursor:pointer; position:relative; padding:0; flex-shrink:0; transition:background .2s,border-color .2s; }
+.tog.on { background:color-mix(in srgb,var(--accent) 18%,transparent); border-color:color-mix(in srgb,var(--accent) 45%,transparent); }
+.tog-k { position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%; background:var(--text3); transition:transform .22s cubic-bezier(.34,1.56,.64,1),background .2s; box-shadow:0 1px 3px rgba(0,0,0,.35); }
+.tog.on .tog-k { transform:translateX(19px); background:var(--accent); }
+.acc-picker { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.acc-dot { width:26px; height:26px; border-radius:50%; border:2.5px solid transparent; cursor:pointer; transition:transform .15s,border-color .15s; flex-shrink:0; }
+.acc-dot.on { border-color:var(--text); transform:scale(1.2); }
+.acc-dot:active { transform:scale(1.1); }
+
+/* VERSION PAGE */
+#pg-ver { overflow-y:auto; }
+#pg-ver::-webkit-scrollbar { width:0; }
+.pg-back { display:flex; align-items:center; gap:10px; padding:calc(14px + env(safe-area-inset-top)) 16px 12px; cursor:pointer; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:5; }
+.pg-back-arrow { width:32px; height:32px; border-radius:50%; background:var(--bg2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text2); transition:all .15s; }
+.pg-back:active .pg-back-arrow { transform:scale(.88); }
+
+/* ── OVERLAY & DRAWERS ── */
+.ov { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.6); opacity:0; pointer-events:none; transition:opacity .25s; }
+.ov.open { opacity:1; pointer-events:auto; }
+.dr { position:fixed; bottom:0; left:50%; transform:translate(-50%,100%); width:100%; max-width:480px; background:var(--bg2); border-radius:20px 20px 0 0; border-top:1px solid var(--border2); z-index:51; transition:transform .3s cubic-bezier(.32,1,.32,1),visibility 0s .3s; box-shadow:var(--sh); padding-bottom:max(16px,env(safe-area-inset-bottom)); visibility:hidden; }
+.dr.open { transform:translate(-50%,0); visibility:visible; transition:transform .3s cubic-bezier(.32,1,.32,1),visibility 0s 0s; }
+.dr-handle { width:36px; height:4px; border-radius:2px; background:var(--border2); margin:11px auto 12px; }
+.dr-ti { font-family:'Syne',sans-serif; font-weight:800; font-size:16px; text-align:center; color:var(--text); margin-bottom:14px; }
+.dr-ok { margin:0 14px 14px; width:calc(100% - 28px); padding:13px; border-radius:14px; background:var(--accent); color:#fff; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; transition:all .15s; box-shadow:0 4px 18px color-mix(in srgb,var(--accent) 35%,transparent); }
+.dr-ok:active { background:var(--accent2); transform:scale(.98); }
+.dr-ok:disabled { opacity:.3; pointer-events:none; background:var(--bg4); box-shadow:none; }
+
+/* Edit modal */
+.dr-field { margin:0 14px 10px; }
+.dr-field label { display:block; font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text2); margin-bottom:5px; }
+.dr-input { width:100%; background:var(--bg3); border:1.5px solid var(--border2); border-radius:var(--rs); padding:10px 13px; font-size:14px; color:var(--text); outline:none; transition:border-color .15s,box-shadow .15s; }
+.dr-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 10%,transparent); }
+.dr-input.err { border-color:var(--del); }
+.dr-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 14px 12px; }
+.dr-field-sm { display:flex; flex-direction:column; gap:4px; }
+.dr-field-sm label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text2); }
+.dr-field-sm input { width:100%; background:var(--bg3); border:1.5px solid var(--border2); border-radius:10px; padding:8px 10px; font-size:13px; color:var(--text); outline:none; transition:border-color .15s; text-align:right; }
+.dr-field-sm input:focus { border-color:var(--accent); }
+.dr-field-sm input.err { border-color:var(--del); }
+.bulk-section { margin:0 14px 10px; background:var(--bg3); border-radius:10px; padding:10px 12px; }
+.bulk-title { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+.bulk-btns { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.btn-bulk { background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:5px 12px; font-size:12px; font-weight:600; color:var(--text2); transition:all .15s; }
+.btn-bulk:active,.btn-bulk.active { border-color:var(--accent); color:var(--accent); }
+.bulk-custom-row { display:flex; gap:6px; align-items:center; margin-top:8px; }
+.bulk-custom-in { width:70px; background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:5px 8px; font-size:13px; color:var(--text); outline:none; }
+.bulk-custom-in:focus { border-color:var(--accent); }
+.bulk-pct-lbl { font-size:12px; color:var(--text3); }
+
+/* Active nutrients drawer */
+.nutrient-check-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:0 14px 12px; }
+.nc-item { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg3); border-radius:10px; font-size:13px; cursor:pointer; transition:background .15s; }
+.nc-item input[type=checkbox] { accent-color:var(--accent); width:16px; height:16px; cursor:pointer; }
+.nc-item:active { background:var(--bg4); }
+
+/* Custom targets drawer */
+.targets-scroll { max-height:55vh; overflow-y:auto; margin:0 14px; }
+.targets-scroll::-webkit-scrollbar { width:0; }
+.target-row { display:flex; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); }
+.target-row:last-child { border-bottom:none; }
+.target-name { flex:1; font-size:13px; color:var(--text); }
+.target-unit { font-family:'DM Mono',monospace; font-size:10px; color:var(--text3); min-width:30px; text-align:right; margin-right:8px; }
+.target-in { width:82px; background:var(--bg3); border:1.5px solid var(--border2); border-radius:8px; padding:6px 8px; font-size:13px; color:var(--text); text-align:right; outline:none; transition:border-color .15s; }
+.target-in:focus { border-color:var(--accent); }
+.simple-mode-form { margin:0 14px 12px; }
+.sm-row { display:flex; gap:10px; margin-bottom:10px; }
+.sm-sel { flex:1; background:var(--bg3); border:1.5px solid var(--border2); border-radius:10px; padding:10px 12px; color:var(--text); font-size:13px; outline:none; }
+.sm-sel:focus { border-color:var(--accent); }
+.mode-switch { display:flex; gap:6px; margin:0 14px 12px; }
+.mode-btn { flex:1; padding:8px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg3); font-size:13px; font-weight:600; color:var(--text2); transition:all .15s; }
+.mode-btn.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent); }
+.mode-hint { font-size:11px; color:var(--text3); text-align:center; margin:0 14px 10px; }
+
+/* CONFIRM */
+.confirm-ov { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:300; display:none; align-items:center; justify-content:center; padding:24px; }
+.confirm-ov.open { display:flex; }
+.confirm-box { background:var(--bg2); border:1px solid var(--border2); border-radius:18px; padding:22px; width:100%; max-width:300px; text-align:center; box-shadow:var(--sh); animation:popUp .2s cubic-bezier(.34,1.3,.64,1); }
+.confirm-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text); margin-bottom:7px; }
+.confirm-msg { font-size:13px; color:var(--text2); line-height:1.65; margin-bottom:18px; white-space:pre-line; }
+.confirm-btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.confirm-btn { padding:12px; border-radius:12px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; transition:all .15s; }
+.confirm-btn:active { transform:scale(.96); }
+.confirm-btn.cancel { background:var(--bg3); border:1px solid var(--border2); color:var(--text2); }
+.confirm-btn.ok { background:rgba(255,92,92,.1); border:1px solid rgba(255,92,92,.28); color:var(--del); }
+.confirm-btn.ok:active { background:var(--del); color:#fff; }
+.confirm-btn.ok.safe { background:color-mix(in srgb,var(--accent) 12%,transparent); border-color:color-mix(in srgb,var(--accent) 32%,transparent); color:var(--accent); }
+.confirm-btn.ok.safe:active { background:var(--accent); color:#fff; }
+
+/* TOAST */
+.toast { position:fixed; bottom:calc(62px + env(safe-area-inset-bottom) + 10px); left:50%; transform:translateX(-50%) translateY(10px); background:var(--bg4); border:1px solid var(--border2); border-radius:20px; padding:7px 16px; font-size:12px; color:var(--text); white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; z-index:200; box-shadow:var(--sh); }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+@keyframes popUp { from{opacity:0;transform:scale(.96) translateY(4px)} to{opacity:1;transform:scale(1) translateY(0)} }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="pages">
+
+    <!-- HOME -->
+    <div class="page active" id="pg-home">
+      <div class="pg-hd">
+        <div class="app-nm">栄養ログ</div>
+        <div class="hd-right">
+          <button class="install-btn" id="installBtn" onclick="installPWA()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="6" x2="12" y2="14"/><polyline points="9 11 12 14 15 11"/></svg>
+            アプリ化
+          </button>
+          <button class="icon-btn" onclick="toggleTheme()">
+            <svg id="thIcMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg id="thIcSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="home-scroll">
+        <div class="date-bar">
+          <div>
+            <div class="date-main" id="todayLabel"></div>
+            <div class="date-sub" id="todaySub"></div>
+          </div>
+          <button class="btn-nutrient-sel" onclick="openNutrientDr()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            表示栄養素
+          </button>
+        </div>
+        <div class="paste-card">
+          <div class="paste-label">Gemini出力を貼り付けて記録</div>
+          <button class="paste-btn" onclick="pasteAndRecord()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="10" height="5" rx="1"/><path d="M3 7h18v15H3z" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+            クリップボードから記録
+          </button>
+          <div class="paste-hint">Geminiの回答（カンマ区切り・20項目）をコピーしてからタップ</div>
+        </div>
+        <div class="gauge-card" id="gaugeCard">
+          <div class="gauge-header">
+            <span class="gauge-title">今日の達成状況</span>
+            <span class="gauge-date-badge" id="gaugeDateBadge">今日</span>
+          </div>
+          <div class="gauge-tabs">
+            <button class="gtab active" onclick="switchGTab(0,this)">マクロ</button>
+            <button class="gtab" onclick="switchGTab(1,this)">ミネラル</button>
+            <button class="gtab" onclick="switchGTab(2,this)">ビタミン/他</button>
+          </div>
+          <div class="gauge-body">
+            <div style="position:relative">
+              <canvas id="gaugeChart" style="display:none"></canvas>
+            </div>
+            <div class="no-data-msg" id="noDataMsg">記録がありません<br>上のボタンから食事を記録してください</div>
+          </div>
+          <div class="gauge-legend">
+            <div class="lg-item"><div class="lg-dot lg-blue"></div>80%未満</div>
+            <div class="lg-item"><div class="lg-dot lg-green"></div>80〜100%</div>
+            <div class="lg-item"><div class="lg-dot lg-orange"></div>100%超過</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECORDS -->
+    <div class="page" id="pg-rec">
+      <div class="pg-hd">
+        <div class="pg-ti">記録一覧</div>
+      </div>
+      <div class="rl-wrap"><div id="recList"></div></div>
+      <button class="rec-fab" onclick="openEditModal(null)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+
+    <!-- REPORT -->
+    <div class="page" id="pg-rep">
+      <div class="rep-nav">
+        <button class="rep-nav-btn" onclick="chRepWk(-1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="rep-title" id="repTitle">今週のレポート</div>
+        <button class="rep-nav-btn" onclick="chRepWk(1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="rep-content" id="repContent"></div>
+      <button class="csv-btn" onclick="exportCSV()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        CSVエクスポート
+      </button>
+    </div>
+
+    <!-- MY PAGE -->
+    <div class="page" id="pg-my">
+      <div class="pg-hd"><div class="pg-ti">マイページ</div></div>
+      <div class="my-av-wrap">
+        <div class="my-av">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="my-un" id="myUserName">栄養ログユーザー</div>
+        <div class="my-sb" id="myUserBio">毎日の食事を記録しています</div>
+      </div>
+
+      <div class="my-sec">
+        <div class="my-st">通算データ</div>
+        <div class="my-sg">
+          <div class="my-sv"><div class="my-svv" id="myTotalRec">0</div><div class="my-svl">総記録数</div></div>
+          <div class="my-sv"><div class="my-svv" id="myTotalDays">0</div><div class="my-svl">記録日数</div></div>
+          <div class="my-sv"><div class="my-svv" id="myAvgKcal">—</div><div class="my-svl">平均kcal/日</div></div>
+          <div class="my-sv"><div class="my-svv" id="myMaxKcal">—</div><div class="my-svl">最高kcal</div></div>
+        </div>
+      </div>
+
+      <div class="my-sec">
+        <div class="my-st">目標設定</div>
+        <div class="my-row tap" onclick="openTargetDr()">
+          <span>栄養目標を設定</span>
+          <span style="font-size:15px;color:var(--text3)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+        </div>
+        <div class="my-row tap" onclick="openNutrientDr()">
+          <span>表示栄養素を選択</span>
+          <span style="font-size:15px;color:var(--text3)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div class="my-sec">
+        <div class="my-st">設定</div>
+        <div class="my-row tap" onclick="toggleTheme()" style="gap:8px">
+          <span style="flex:1">テーマ</span>
+          <span class="my-rv" id="thLbl">ダーク</span>
+          <div class="tog on" id="togDk"><div class="tog-k"></div></div>
+        </div>
+        <div class="my-row">
+          <span>アクセントカラー</span>
+          <div class="acc-picker" id="myAccPicker"></div>
+        </div>
+      </div>
+
+      <div class="my-sec">
+        <div class="my-st">このアプリについて</div>
+        <div class="my-row"><span>バージョン</span><span class="my-rv" id="curVersion">—</span></div>
+        <div class="my-row tap" onclick="goPage('ver')">
+          <span>バージョン更新履歴</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3)"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <div class="my-sec" style="margin-bottom:24px">
+        <div class="my-st">データ管理</div>
+        <div class="my-row tap" onclick="exportCSV()">
+          <span>CSVエクスポート</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3)"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="my-row tap" onclick="document.getElementById('csvImport').click()">
+          <span>CSVインポート</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3)"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <input type="file" id="csvImport" accept=".csv" style="position:fixed;top:-999px;left:-999px;opacity:0" onchange="importCSV(this)">
+        <div class="my-row tap danger" onclick="confirmClearAll()">
+          <span>すべての記録を削除</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERSION HISTORY -->
+    <div class="page" id="pg-ver">
+      <div class="pg-back" onclick="goPage('my')">
+        <div class="pg-back-arrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </div>
+        <div class="pg-ti">更新履歴</div>
+      </div>
+      <div id="verList" style="padding:0 14px 24px"></div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <nav class="footer">
+    <button class="nav-it active" id="nv-home" onclick="goPage('home')">
+      <div class="nav-ic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      ホーム
+    </button>
+    <button class="nav-it" id="nv-rec" onclick="goPage('rec')">
+      <div class="nav-ic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      記録
+    </button>
+    <button class="nav-it" id="nv-rep" onclick="goPage('rep')">
+      <div class="nav-ic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      レポート
+    </button>
+    <button class="nav-it" id="nv-my" onclick="goPage('my')">
+      <div class="nav-ic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      マイページ
+    </button>
+  </nav>
+</div>
+
+<!-- OVERLAY -->
+<div class="ov" id="ov" onclick="closeAllDr()"></div>
+
+<!-- EDIT / ADD DRAWER -->
+<div class="dr" id="drEdit">
+  <div class="dr-handle"></div>
+  <div class="dr-ti" id="drEditTitle">食事を追加</div>
+  <div class="dr-field">
+    <label>時刻 (HH:MM)</label>
+    <input class="dr-input" type="time" id="editTime">
+  </div>
+  <div class="bulk-section">
+    <div class="bulk-title">一括補正</div>
+    <div class="bulk-btns">
+      <button class="btn-bulk" onclick="applyBulk(1)">100%</button>
+      <button class="btn-bulk" onclick="applyBulk(0.8)">80%</button>
+      <button class="btn-bulk" onclick="applyBulk(0.5)">50%</button>
+    </div>
+    <div class="bulk-custom-row">
+      <input type="number" class="bulk-custom-in" id="bulkCustomIn" placeholder="75" min="1" max="999">
+      <span class="bulk-pct-lbl">%</span>
+      <button class="btn-bulk" onclick="applyBulkCustom()">適用</button>
+    </div>
+  </div>
+  <div class="dr-grid" id="editGrid"></div>
+  <button class="dr-ok" onclick="saveEdit()">保存する</button>
+</div>
+
+<!-- NUTRIENT SELECTION DRAWER -->
+<div class="dr" id="drNutrient">
+  <div class="dr-handle"></div>
+  <div class="dr-ti">表示栄養素を選択</div>
+  <div class="nutrient-check-grid" id="nutrientCheckGrid"></div>
+  <button class="dr-ok" onclick="closeAllDr()">閉じる</button>
+</div>
+
+<!-- TARGET DRAWER -->
+<div class="dr" id="drTarget">
+  <div class="dr-handle"></div>
+  <div class="dr-ti">栄養目標を設定</div>
+  <div class="mode-switch">
+    <button class="mode-btn on" id="tgtSimpleBtn" onclick="setTargetMode('simple')">簡易モード</button>
+    <button class="mode-btn" id="tgtCustomBtn" onclick="setTargetMode('custom')">カスタム</button>
+  </div>
+  <div id="tgtSimpleSection">
+    <div class="simple-mode-form">
+      <div class="sm-row">
+        <select class="sm-sel" id="smGender">
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select>
+        <select class="sm-sel" id="smAge">
+          <option value="10s">10代</option>
+          <option value="20s">20代</option>
+          <option value="30s">30代</option>
+          <option value="40s">40代</option>
+          <option value="50s">50代以上</option>
+        </select>
+      </div>
+    </div>
+    <div class="mode-hint">日本人の食事摂取基準（2025年版）参考の暫定値。カスタムで細かく設定できます。</div>
+    <div style="margin:0 14px 10px">
+      <button class="dr-ok" style="margin:0;width:100%" onclick="applySimpleTargets()">この設定を適用</button>
+    </div>
+  </div>
+  <div id="tgtCustomSection" style="display:none">
+    <div class="targets-scroll" id="targetsScroll"></div>
+    <button class="dr-ok" onclick="saveCustomTargets()">保存する</button>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-ov" id="confirmOv">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">確認</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-btn cancel" onclick="closeConfirm()">キャンセル</button>
+      <button class="confirm-btn ok" id="confirmOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONSTANTS ──
+const NUTRIENTS = [
+  {name:'カロリー',unit:'kcal',cat:0},
+  {name:'タンパク質',unit:'g',cat:0},
+  {name:'脂質',unit:'g',cat:0},
+  {name:'炭水化物',unit:'g',cat:0},
+  {name:'糖質',unit:'g',cat:0},
+  {name:'食物繊維',unit:'g',cat:0},
+  {name:'飽和脂肪酸',unit:'g',cat:1},
+  {name:'不飽和脂肪酸',unit:'g',cat:1},
+  {name:'コレステロール',unit:'mg',cat:1},
+  {name:'ナトリウム(塩分)',unit:'g',cat:1},
+  {name:'カリウム',unit:'mg',cat:1},
+  {name:'カルシウム',unit:'mg',cat:1},
+  {name:'鉄',unit:'mg',cat:1},
+  {name:'亜鉛',unit:'mg',cat:1},
+  {name:'ビタミンA',unit:'μg',cat:2},
+  {name:'ビタミンB1',unit:'mg',cat:2},
+  {name:'ビタミンC',unit:'mg',cat:2},
+  {name:'ビタミンD',unit:'μg',cat:2},
+  {name:'ビタミンE',unit:'mg',cat:2},
+  {name:'水分',unit:'g',cat:2},
+];
+const TARGET_KEYS=['calorie','protein','fat','carbohydrate','sugar','fiber','saturatedFat','unsaturatedFat','cholesterol','sodium','potassium','calcium','iron','zinc','vitaminA','vitaminB1','vitaminC','vitaminD','vitaminE','water'];
+const DAY=['日','月','火','水','木','金','土'];
+const MON=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const DEFAULT_ACTIVE=[0,1,2,3,5,6,9];
+const SIMPLE_TARGETS={
+  male:{
+    '10s':[2600,65,70,340,280,21,20,25,300,7.5,2500,800,10,10,800,1.4,100,10,7,2000],
+    '20s':[2650,65,73,350,290,21,22,26,300,7.5,2500,800,7.5,11,900,1.4,100,8,6,2000],
+    '30s':[2650,65,73,350,290,21,22,26,300,7.5,2500,750,7.5,11,900,1.4,100,8,6,2000],
+    '40s':[2600,60,70,340,280,21,21,25,300,7.5,2500,750,7.5,11,850,1.3,100,8,6,2000],
+    '50s':[2400,60,65,310,255,21,20,23,300,7.5,2500,750,7.5,11,850,1.3,100,8,6,2000],
+  },
+  female:{
+    '10s':[2200,55,60,290,240,18,16,21,300,6.5,2000,800,12,8,700,1.2,100,10,6,1800],
+    '20s':[2000,50,54,270,225,18,15,19,300,6.5,2000,650,10.5,8,700,1.1,100,8,5,1800],
+    '30s':[2000,50,54,270,225,18,15,19,300,6.5,2000,650,10.5,8,700,1.1,100,8,5,1800],
+    '40s':[1950,50,53,260,215,18,15,19,300,6.5,2000,650,10.5,8,700,1.1,100,8,5,1800],
+    '50s':[1800,50,49,240,198,18,14,17,300,6.5,2000,650,10.5,8,700,1.1,100,8,5,1800],
+  }
+};
+const CHANGELOG=[
+  {v:'2.0.0',note:'UI完全刷新。ねむろく風デザイン採用。クリップボード記録、SVGアイコン統一、PWA対応、アクセントカラー選択、マイページ強化、バージョン履歴追加。'},
+  {v:'1.0.0',note:'初期リリース。テキスト貼り付けによる食事記録、20栄養素管理、水平ゲージ表示、CSV入出力、ライト/ダークテーマ。'},
+];
+const CURRENT_VERSION=CHANGELOG[0].v;
+
+// ── ACCENT COLORS ──
+const ACCENTS={
+  indigo:{hex:'#4f6ef7',hex2:'#7c3aed'},
+  teal:  {hex:'#4ec9c0',hex2:'#2da09a'},
+  green: {hex:'#10b981',hex2:'#059669'},
+  rose:  {hex:'#f43f5e',hex2:'#e11d48'},
+  amber: {hex:'#f59e0b',hex2:'#d97706'},
+  violet:{hex:'#8b5cf6',hex2:'#7c3aed'},
+};
+const ACCENT_ORDER=['indigo','teal','green','rose','amber','violet'];
+let currentAccent=localStorage.getItem('nl_accent')||'indigo';
+
+function applyAccent(name,persist=true){
+  currentAccent=name;
+  const a=ACCENTS[name]||ACCENTS.indigo;
+  document.documentElement.style.setProperty('--accent',a.hex);
+  document.documentElement.style.setProperty('--accent2',a.hex2);
+  if(persist)localStorage.setItem('nl_accent',name);
+  renderAccentPicker();
+  if(gaugeChart)renderGauge();
+}
+function renderAccentPicker(){
+  const el=document.getElementById('myAccPicker');if(!el)return;
+  el.innerHTML=ACCENT_ORDER.map(name=>{
+    const a=ACCENTS[name];
+    return `<button class="acc-dot${currentAccent===name?' on':''}" style="background:${a.hex}" onclick="applyAccent('${name}')" title="${name}"></button>`;
+  }).join('');
+}
+
+// ── STATE ──
+let mealData=JSON.parse(localStorage.getItem('mealData')||'{}');
+let targets=JSON.parse(localStorage.getItem('targets')||'null');
+let activeNutrients=JSON.parse(localStorage.getItem('activeNutrients')||'null')||DEFAULT_ACTIVE;
+let currentGaugeTab=0;
+let currentViewDate=null;
+let gaugeChart=null;
+let editTarget=null; // {date, id} or null for add
+let repWkOff=0;
+let confirmCb=null;
+let targetMode='simple';
+let deferredPrompt=null;
+
+const p2=n=>String(n).padStart(2,'0');
+function todayStr(){const d=new Date();return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;}
+function nowTime(){const d=new Date();return`${p2(d.getHours())}:${p2(d.getMinutes())}`;}
+function fD(d){return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;}
+function genId(){return Date.now()+'_'+Math.random().toString(36).slice(2,6);}
+
+function saveMealData(){localStorage.setItem('mealData',JSON.stringify(mealData));}
+function saveTargets(){localStorage.setItem('targets',JSON.stringify(targets));}
+function saveActiveNutrients(){localStorage.setItem('activeNutrients',JSON.stringify(activeNutrients));}
+
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+// ── NAVIGATION ──
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-it').forEach(n=>n.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  const nvId='nv-'+(id==='ver'?'my':id);
+  const nv=document.getElementById(nvId);if(nv)nv.classList.add('active');
+  if(id==='rec')renderRecords();
+  if(id==='rep')renderReport();
+  if(id==='my')renderMy();
+  if(id==='ver')renderVersionHistory();
+}
+
+// ── PASTE & RECORD ──
+async function pasteAndRecord(){
+  let text='';
+  try{
+    text=await navigator.clipboard.readText();
+  }catch(e){
+    toast('クリップボードへのアクセスを許可してください');return;
+  }
+  if(!text.trim()){toast('クリップボードが空です');return;}
+  const parts=text.split(',').map(s=>s.trim());
+  if(parts.length!==20){toast(`20項目が必要です（現在${parts.length}項目）`);return;}
+  const values=parts.map(parseFloat);
+  const errorIdxs=values.reduce((a,v,i)=>isNaN(v)?[...a,i]:a,[]);
+  if(errorIdxs.length>0){
+    openEditModal(null,values,errorIdxs);return;
+  }
+  addMealEntry(values);
+}
+
+function addMealEntry(values,time){
+  const date=todayStr();
+  if(!mealData[date])mealData[date]=[];
+  mealData[date].push({id:genId(),time:time||nowTime(),values});
+  saveMealData();
+  currentViewDate=date;
+  toast('✅ 記録しました');
+  renderGauge();
+}
+
+// ── EDIT MODAL ──
+function openEditModal(entryRef,prefillValues,errorIdxs){
+  // entryRef: {date,id} or null for new
+  editTarget=entryRef;
+  document.getElementById('drEditTitle').textContent=entryRef?'食事を編集':'食事を追加';
+  let vals=prefillValues||new Array(20).fill(0);
+  if(entryRef){
+    const entry=(mealData[entryRef.date]||[]).find(e=>e.id===entryRef.id);
+    if(entry){vals=entry.values;document.getElementById('editTime').value=entry.time;}
+  }else{
+    document.getElementById('editTime').value=nowTime();
+  }
+  buildEditGrid(vals,errorIdxs);
+  showDr('drEdit');
+}
+function buildEditGrid(vals,errorIdxs){
+  const grid=document.getElementById('editGrid');grid.innerHTML='';
+  NUTRIENTS.forEach((n,i)=>{
+    const div=document.createElement('div');div.className='dr-field-sm';
+    const isErr=errorIdxs&&errorIdxs.includes(i);
+    div.innerHTML=`<label>${n.name}（${n.unit}）</label><input type="number" step="any" id="ef_${i}" value="${isNaN(vals[i])?'':vals[i]}" class="${isErr?'err':''}">`;
+    grid.appendChild(div);
+  });
+}
+function applyBulk(ratio){
+  NUTRIENTS.forEach((_,i)=>{
+    const inp=document.getElementById('ef_'+i);
+    if(inp)inp.value=Math.round(parseFloat(inp.value||0)*ratio*10)/10;
+  });
+}
+function applyBulkCustom(){
+  const pct=parseFloat(document.getElementById('bulkCustomIn').value);
+  if(isNaN(pct)||pct<=0){toast('有効な%を入力してください');return;}
+  applyBulk(pct/100);
+}
+function saveEdit(){
+  const timeVal=document.getElementById('editTime').value||nowTime();
+  const values=NUTRIENTS.map((_,i)=>parseFloat(document.getElementById('ef_'+i).value)||0);
+  if(editTarget){
+    const entries=mealData[editTarget.date]||[];
+    const entry=entries.find(e=>e.id===editTarget.id);
+    if(entry){entry.values=values;entry.time=timeVal;}
+    saveMealData();toast('✅ 更新しました');
+  }else{
+    addMealEntry(values,timeVal);
+  }
+  closeAllDr();renderRecords();renderGauge();
+}
+
+// ── GAUGE ──
+function switchGTab(idx,el){
+  currentGaugeTab=idx;
+  document.querySelectorAll('.gtab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderGauge();
+}
+
+function renderGauge(){
+  const dateKey=currentViewDate||todayStr();
+  const entries=mealData[dateKey]||[];
+  const tgts=targets||{};
+
+  const totals=new Array(20).fill(0);
+  entries.forEach(e=>e.values.forEach((v,i)=>totals[i]+=v));
+
+  const catNutrients=NUTRIENTS.map((n,i)=>({...n,idx:i}))
+    .filter(n=>n.cat===currentGaugeTab&&activeNutrients.includes(n.idx));
+
+  const canvas=document.getElementById('gaugeChart');
+  const noData=document.getElementById('noDataMsg');
+
+  if(catNutrients.length===0||entries.length===0){
+    canvas.style.display='none';noData.style.display='block';
+    noData.textContent=entries.length===0
+      ?'記録がありません\n上のボタンから食事を記録してください'
+      :'このカテゴリの表示栄養素がありません';
+    if(gaugeChart){gaugeChart.destroy();gaugeChart=null;}
+    return;
+  }
+  canvas.style.display='block';noData.style.display='none';
+
+  const labels=catNutrients.map(n=>`${n.name}（${n.unit}）`);
+  const vals=catNutrients.map(n=>+(totals[n.idx].toFixed(2)));
+  const tgtVals=catNutrients.map(n=>{const k=TARGET_KEYS[n.idx];return tgts[k]||0;});
+
+  const colors=catNutrients.map((_,i)=>{
+    const t=tgtVals[i];const v=vals[i];
+    if(t===0)return '#6b7280';
+    const r=v/t;
+    if(r<0.8)return '#3b82f6';
+    if(r<=1.0)return '#10b981';
+    return '#f59e0b';
+  });
+
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const gridC=isDark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.06)';
+  const tickC=isDark?'#7a7a7a':'#6b7280';
+
+  // FIX: Per-nutrient x-axis max based on each nutrient's own target or actual value
+  // Use a single chart but set suggestedMax per dataset item dynamically via custom plugin
+  // Actually Chart.js bar supports only one scale, so we normalize to percentage (0-100%)
+  // and label accordingly
+  const pctVals=catNutrients.map((_,i)=>{
+    const t=tgtVals[i];const v=vals[i];
+    if(t===0)return v>0?100:0;
+    return Math.min(+(v/t*100).toFixed(1),200);
+  });
+
+  const ht=Math.max(160,catNutrients.length*44+60);
+  canvas.height=ht;
+
+  if(gaugeChart){gaugeChart.destroy();gaugeChart=null;}
+
+  gaugeChart=new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'達成率(%)',
+        data:pctVals,
+        backgroundColor:colors,
+        borderRadius:5,
+        barThickness:16,
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label(ctx){
+              const i=ctx.dataIndex;
+              const v=vals[i];
+              const t=tgtVals[i];
+              const pct=t>0?Math.round(v/t*100):'—';
+              return`実績: ${v} / 目標: ${t>0?t:'未設定'} （${pct}%）`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          min:0,max:120,
+          grid:{color:gridC},
+          ticks:{
+            color:tickC,
+            font:{size:10},
+            callback:v=>v+'%'
+          }
+        },
+        y:{
+          grid:{display:false},
+          ticks:{color:tickC,font:{size:11}}
+        }
+      }
+    }
+  });
+}
+
+// ── RECORDS ──
+function renderRecords(){
+  const list=document.getElementById('recList');
+  const allDates=Object.keys(mealData).sort((a,b)=>b.localeCompare(a));
+  if(!allDates.length){list.innerHTML='<div class="empty-state">記録がありません<br><br>ホームから食事を記録してください</div>';return;}
+  list.innerHTML='';
+  allDates.forEach(date=>{
+    const entries=mealData[date]||[];
+    if(!entries.length)return;
+    const d=new Date(date+'T12:00:00');
+    const diff=Math.round((new Date().setHours(0,0,0,0)-new Date(date).setHours(0,0,0,0))/86400000);
+    const dLabel=diff===0?'今日':diff===1?'昨日':`${MON[d.getMonth()]} ${d.getDate()}日 (${DAY[d.getDay()]})`;
+    const hd=document.createElement('div');hd.className='rec-dg-hd';hd.textContent=dLabel;list.appendChild(hd);
+    const card=document.createElement('div');card.className='entry-card';
+    const sorted=[...entries].sort((a,b)=>a.time.localeCompare(b.time));
+    sorted.forEach(entry=>{
+      const row=document.createElement('div');row.className='entry-row';
+      const kcal=entry.values[0]||0,prot=entry.values[1]||0,fat=entry.values[2]||0;
+      row.innerHTML=`<div class="entry-time">${entry.time}</div><div class="entry-summary"><strong>${Math.round(kcal)}kcal</strong> P:${prot}g F:${fat}g</div><div class="entry-actions"><button class="eib ed" title="編集" onclick="openEditModal({date:'${date}',id:'${entry.id}'})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg></button><button class="eib dl" title="削除" onclick="confirmDelete('${date}','${entry.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+      card.appendChild(row);
+    });
+    list.appendChild(card);
+  });
+}
+
+function confirmDelete(date,id){
+  showConfirm('この記録を削除しますか？\nこの操作は取り消せません。','削除する',false,()=>{
+    mealData[date]=(mealData[date]||[]).filter(e=>e.id!==id);
+    if(!mealData[date].length)delete mealData[date];
+    saveMealData();renderRecords();renderGauge();toast('削除しました');
+  });
+}
+
+// ── REPORT ──
+function chRepWk(d){repWkOff+=d;renderReport();}
+function renderReport(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const base=new Date(today);base.setDate(base.getDate()+repWkOff*7);
+  const offset=(base.getDay()+6)%7;
+  const mon=new Date(base);mon.setDate(base.getDate()-offset);
+  const days=Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+  const todayStr2=fD(new Date());
+  document.getElementById('repTitle').textContent=repWkOff===0?'今週のレポート':repWkOff===-1?'先週のレポート':`${MON[mon.getMonth()]} ${mon.getDate()}日〜${days[6].getDate()}日`;
+  const dayKcals=days.map(d=>{
+    const ds=fD(d);
+    const entries=mealData[ds]||[];
+    return entries.reduce((s,e)=>s+(e.values[0]||0),0);
+  });
+  const activeDays=dayKcals.filter(v=>v>0);
+  const avgKcal=activeDays.length?Math.round(activeDays.reduce((a,v)=>a+v,0)/activeDays.length):0;
+  const maxKcal=activeDays.length?Math.max(...activeDays):0;
+  const maxBar=Math.max(...dayKcals,500);
+  const c=document.getElementById('repContent');c.innerHTML='';
+  const hero=document.createElement('div');hero.className='rep-hero';
+  hero.innerHTML=`
+    <div class="rep-hcard"><div class="rep-hl">平均カロリー</div><div class="rep-hv">${avgKcal?avgKcal+'kcal':'—'}</div><div class="rep-hsub">記録${activeDays.length}日分</div></div>
+    <div class="rep-hcard"><div class="rep-hl">最大カロリー</div><div class="rep-hv">${maxKcal?Math.round(maxKcal)+'kcal':'—'}</div><div class="rep-hsub">今週の最大値</div></div>
+    <div class="rep-hcard"><div class="rep-hl">記録日数</div><div class="rep-hv">${activeDays.length}<span style="font-size:14px;color:var(--text3)">/7</span></div><div class="rep-hsub">今週</div></div>
+    <div class="rep-hcard"><div class="rep-hl">総記録数</div><div class="rep-hv">${days.reduce((s,d)=>{const ds=fD(d);return s+(mealData[ds]||[]).length;},0)}</div><div class="rep-hsub">食事エントリー</div></div>
+  `;
+  c.appendChild(hero);
+  const chartCard=document.createElement('div');chartCard.className='rep-chart-card';
+  chartCard.innerHTML=`<div class="rep-chart-title">曜日別カロリー</div><div class="rep-bars" id="repBars"></div>`;
+  c.appendChild(chartCard);
+  const barsEl=chartCard.querySelector('#repBars');
+  days.forEach((d,i)=>{
+    const isT=fD(d)===todayStr2;const kcal=dayKcals[i];const pct=kcal?Math.min(100,(kcal/maxBar)*100):0;
+    const wrap=document.createElement('div');wrap.className='rep-bar-wrap';
+    const valEl=document.createElement('div');valEl.className='rep-bar-val';valEl.textContent=kcal?Math.round(kcal):'';
+    const bgEl=document.createElement('div');bgEl.className='rep-bar-bg';
+    const fillEl=document.createElement('div');fillEl.className='rep-bar-fill'+(isT?' today':'');
+    fillEl.dataset.pct=String(pct);fillEl.style.height='0px';bgEl.appendChild(fillEl);
+    const lblEl=document.createElement('div');lblEl.className='rep-bar-lbl';lblEl.textContent=DAY[d.getDay()];
+    wrap.appendChild(valEl);wrap.appendChild(bgEl);wrap.appendChild(lblEl);barsEl.appendChild(wrap);
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    barsEl.querySelectorAll('.rep-bar-bg').forEach(bg=>{
+      const fill=bg.querySelector('.rep-bar-fill');if(!fill)return;
+      const pct=parseFloat(fill.dataset.pct||'0');
+      const h=bg.getBoundingClientRect().height;
+      fill.style.transition='height .5s cubic-bezier(.34,1.3,.64,1)';
+      fill.style.height=(pct/100*h)+'px';
+    });
+  }));
+  const tableCard=document.createElement('div');tableCard.className='rep-table-card';
+  tableCard.innerHTML=`<div class="rep-table-title">日別ログ</div>`;
+  days.forEach(d=>{
+    const ds=fD(d);const isT=ds===todayStr2;
+    const entries=(mealData[ds]||[]).sort((a,b)=>a.time.localeCompare(b.time));
+    const grp=document.createElement('div');grp.className='rep-day-group';
+    const dayKcal=dayKcals[days.indexOf(d)];
+    grp.innerHTML=`<div class="rep-day-hd"><span class="rep-day-name">${DAY[d.getDay()]} ${d.getDate()}日${isT?' (今日)':''}</span>${dayKcal?`<span class="rep-day-kcal">${Math.round(dayKcal)}kcal</span>`:''}</div>`;
+    if(entries.length){
+      entries.forEach(e=>{
+        const row=document.createElement('div');row.className='rep-sess-row';
+        row.innerHTML=`<span class="rep-cell">${e.time}</span><span class="rep-cell" style="color:var(--text2);font-size:11px">P:${e.values[1]||0}g F:${e.values[2]||0}g</span><span class="rep-cell kcal">${Math.round(e.values[0]||0)}kcal</span>`;
+        grp.appendChild(row);
+      });
+    }else{
+      grp.innerHTML+=`<div class="rep-sess-row"><span class="rep-cell miss" style="grid-column:1/4">記録なし</span></div>`;
+    }
+    tableCard.appendChild(grp);
+  });
+  c.appendChild(tableCard);
+}
+
+// ── MY PAGE ──
+function renderMy(){
+  const allDates=Object.keys(mealData);
+  const allEntries=allDates.flatMap(d=>mealData[d]||[]);
+  document.getElementById('myTotalRec').textContent=allEntries.length;
+  document.getElementById('myTotalDays').textContent=allDates.filter(d=>(mealData[d]||[]).length>0).length;
+  const dayKcals=allDates.map(d=>(mealData[d]||[]).reduce((s,e)=>s+(e.values[0]||0),0)).filter(v=>v>0);
+  document.getElementById('myAvgKcal').textContent=dayKcals.length?Math.round(dayKcals.reduce((a,v)=>a+v,0)/dayKcals.length):'—';
+  document.getElementById('myMaxKcal').textContent=dayKcals.length?Math.round(Math.max(...dayKcals)):'—';
+  document.getElementById('curVersion').textContent=CURRENT_VERSION;
+  renderAccentPicker();
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.getElementById('thLbl').textContent=isDark?'ダーク':'ライト';
+  document.getElementById('togDk').classList.toggle('on',isDark);
+}
+
+// ── VERSION HISTORY ──
+function renderVersionHistory(){
+  const el=document.getElementById('verList');el.innerHTML='';
+  const sec=document.createElement('div');sec.className='my-sec';
+  CHANGELOG.forEach((entry,i)=>{
+    const row=document.createElement('div');row.className='my-row';
+    row.style.cssText='flex-direction:column;align-items:flex-start;gap:4px;padding:13px 14px;';
+    const isCur=i===0;
+    row.innerHTML=`<div style="display:flex;justify-content:space-between;width:100%;align-items:center"><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:${isCur?'var(--accent)':'var(--text)'}">${isCur?'▸ ':''}v${entry.v}${isCur?' (現在)':''}</span></div><span style="font-size:12px;color:var(--text2);line-height:1.6">${entry.note}</span>`;
+    sec.appendChild(row);
+  });
+  el.appendChild(sec);
+}
+
+// ── NUTRIENT DRAWER ──
+function openNutrientDr(){
+  const grid=document.getElementById('nutrientCheckGrid');grid.innerHTML='';
+  NUTRIENTS.forEach((n,i)=>{
+    const label=document.createElement('label');label.className='nc-item';
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=activeNutrients.includes(i);
+    cb.onchange=()=>{
+      activeNutrients=cb.checked?[...activeNutrients,i].sort((a,b)=>a-b):activeNutrients.filter(x=>x!==i);
+      saveActiveNutrients();renderGauge();
+    };
+    label.appendChild(cb);label.appendChild(document.createTextNode(`${n.name}`));
+    grid.appendChild(label);
+  });
+  showDr('drNutrient');
+}
+
+// ── TARGET DRAWER ──
+function openTargetDr(){setTargetMode('simple');showDr('drTarget');}
+function setTargetMode(mode){
+  targetMode=mode;
+  document.getElementById('tgtSimpleSection').style.display=mode==='simple'?'':'none';
+  document.getElementById('tgtCustomSection').style.display=mode==='custom'?'':'none';
+  document.getElementById('tgtSimpleBtn').classList.toggle('on',mode==='simple');
+  document.getElementById('tgtCustomBtn').classList.toggle('on',mode==='custom');
+  if(mode==='custom')buildCustomTargets();
+}
+function buildCustomTargets(){
+  const scroll=document.getElementById('targetsScroll');scroll.innerHTML='';
+  const tgts=targets||{};
+  NUTRIENTS.forEach((n,i)=>{
+    const k=TARGET_KEYS[i];
+    const row=document.createElement('div');row.className='target-row';
+    row.innerHTML=`<span class="target-name">${n.name}</span><span class="target-unit">${n.unit}</span><input type="number" step="any" class="target-in" id="ti_${i}" value="${tgts[k]||0}">`;
+    scroll.appendChild(row);
+  });
+}
+function applySimpleTargets(){
+  const g=document.getElementById('smGender').value||'male';
+  const a=document.getElementById('smAge').value||'20s';
+  const arr=SIMPLE_TARGETS[g][a];
+  targets={};TARGET_KEYS.forEach((k,i)=>targets[k]=arr[i]);
+  saveTargets();closeAllDr();toast('目標値を設定しました');renderGauge();
+}
+function saveCustomTargets(){
+  targets={};
+  NUTRIENTS.forEach((_,i)=>{targets[TARGET_KEYS[i]]=parseFloat(document.getElementById('ti_'+i).value)||0;});
+  saveTargets();closeAllDr();toast('目標値を保存しました');renderGauge();
+}
+
+// ── THEME ──
+function toggleTheme(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const next=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  document.getElementById('thIcMoon').style.display=next==='dark'?'':'none';
+  document.getElementById('thIcSun').style.display=next==='dark'?'none':'';
+  document.getElementById('thLbl').textContent=next==='dark'?'ダーク':'ライト';
+  document.getElementById('togDk').classList.toggle('on',next==='dark');
+  document.getElementById('metaTheme').content=next==='dark'?'#121212':'#f7f8fc';
+  localStorage.setItem('nl_theme',next);
+  if(gaugeChart)renderGauge();
+}
+
+// ── CSV ──
+function exportCSV(){
+  const dates=Object.keys(mealData).sort();
+  const header=['日付','時刻',...NUTRIENTS.map(n=>n.name)].join(',');
+  const rows=[header];
+  dates.forEach(date=>{
+    (mealData[date]||[]).sort((a,b)=>a.time.localeCompare(b.time)).forEach(e=>{
+      rows.push([date,e.time,...e.values].join(','));
+    });
+  });
+  const now=new Date();
+  const ts=`${now.getFullYear()}${p2(now.getMonth()+1)}${p2(now.getDate())}_${p2(now.getHours())}${p2(now.getMinutes())}${p2(now.getSeconds())}`;
+  const blob=new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`meal_log_${ts}.csv`;a.click();
+  toast('CSVをダウンロードしました');
+}
+function importCSV(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const text=e.target.result.replace(/^\uFEFF/,'');
+      const lines=text.split('\n').filter(l=>l.trim());
+      if(lines.length<2){toast('データがありません');return;}
+      const newData={};let count=0;
+      const existing=new Set(Object.values(mealData).flatMap(entries=>entries.map(e=>e.id)));
+      for(let i=1;i<lines.length;i++){
+        const cols=lines[i].split(',');
+        if(cols.length<22)continue;
+        const date=cols[0].trim(),time=cols[1].trim();
+        const values=cols.slice(2,22).map(parseFloat);
+        if(!date||!time||values.some(isNaN))continue;
+        if(!newData[date])newData[date]=[];
+        newData[date].push({id:genId(),time,values});count++;
+      }
+      showConfirm(`既存データを消去してインポートします（${count}件）\nよろしいですか？`,'インポートする',true,()=>{
+        mealData=newData;saveMealData();renderGauge();renderRecords();toast(`${count}件をインポートしました`);
+      });
+    }catch(err){toast('インポートに失敗しました');}
+  };
+  reader.readAsText(file,'UTF-8');
+  input.value='';
+}
+function confirmClearAll(){
+  showConfirm('すべての食事データを削除します\nこの操作は取り消せません','すべて削除',false,()=>{
+    mealData={};saveMealData();renderGauge();renderRecords();toast('全データを削除しました');
+  });
+}
+
+// ── DRAWERS ──
+let activeDr=null;
+function showDr(id){
+  if(activeDr)document.getElementById(activeDr).classList.remove('open');
+  activeDr=id;
+  document.getElementById('ov').classList.add('open');
+  document.getElementById(id).classList.add('open');
+}
+function closeAllDr(){
+  document.getElementById('ov').classList.remove('open');
+  ['drEdit','drNutrient','drTarget'].forEach(id=>document.getElementById(id).classList.remove('open'));
+  activeDr=null;editTarget=null;
+}
+
+// ── CONFIRM ──
+function showConfirm(msg,okLabel,safe,cb){
+  document.getElementById('confirmMsg').textContent=msg;
+  const okBtn=document.getElementById('confirmOkBtn');
+  okBtn.textContent=okLabel||'OK';
+  okBtn.className='confirm-btn ok'+(safe?' safe':'');
+  confirmCb=cb;
+  document.getElementById('confirmOv').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirmOv').classList.remove('open');confirmCb=null;}
+document.getElementById('confirmOkBtn').onclick=()=>{closeConfirm();if(confirmCb)confirmCb();};
+
+// ── PWA ──
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('installBtn').classList.add('show');
+});
+function installPWA(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('installBtn').classList.remove('show');});
+}
+window.addEventListener('appinstalled',()=>{document.getElementById('installBtn').classList.remove('show');toast('ホーム画面に追加しました');});
+
+// ── INIT ──
+(function init(){
+  const th=localStorage.getItem('nl_theme')||'dark';
+  document.documentElement.setAttribute('data-theme',th);
+  document.getElementById('thIcMoon').style.display=th==='dark'?'':'none';
+  document.getElementById('thIcSun').style.display=th==='dark'?'none':'';
+  document.getElementById('metaTheme').content=th==='dark'?'#121212':'#f7f8fc';
+  applyAccent(currentAccent,false);
+  if(!targets){
+    const arr=SIMPLE_TARGETS.male['20s'];
+    targets={};TARGET_KEYS.forEach((k,i)=>targets[k]=arr[i]);
+    saveTargets();
+  }
+  const today=new Date();
+  const DAY2=['日','月','火','水','木','金','土'];
+  currentViewDate=todayStr();
+  document.getElementById('todayLabel').textContent=`${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日（${DAY2[today.getDay()]}）`;
+  document.getElementById('todaySub').textContent='今日の記録';
+  document.getElementById('gaugeDateBadge').textContent='今日';
+  renderGauge();
+})();
+</script>
+</body>
+</html>
