@@ -1182,10 +1182,17 @@ function getWeekDays(baseDate){
 
 // ── REPORT SWIPE ──
 (function initRepSwipe(){
-  let tx=0,ty=0;
+  let tx=0,ty=0,ignore=false;
   const THRESH=44,RATIO=1.4;
-  function onStart(e){const t=e.touches?.[0]??e;tx=t.clientX;ty=t.clientY;}
+  function onStart(e){
+    const t=e.touches?.[0]??e;
+    tx=t.clientX;ty=t.clientY;
+    // If the touch starts inside a horizontally-scrollable element
+    // (e.g. the nutrient selector), don't treat this as a week-swipe gesture.
+    ignore=!!(e.target.closest && e.target.closest('.rep-nutrient-scroll'));
+  }
   function onEnd(e){
+    if(ignore)return;
     const t=e.changedTouches?.[0]??e;
     const dx=t.clientX-tx,dy=t.clientY-ty;
     if(Math.abs(dx)<THRESH||Math.abs(dy)/Math.abs(dx)>1/RATIO)return;
