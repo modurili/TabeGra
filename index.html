@@ -8,7 +8,10 @@
 <meta name="apple-mobile-web-app-title" content="たべぐら">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#121212" id="metaTheme">
-<link rel="manifest" id="manifestLink">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>たべぐら</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
@@ -678,17 +681,15 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'),2600);
 }
 
-// ── PWA MANIFEST (dynamic) ──
+// ── PWA THEME COLOR SYNC ──
+// manifest.json is now a static file (with real PNG icons) for GitHub Pages hosting.
+// We just keep the <meta theme-color> in sync with the current accent/theme.
 function setupManifest(){
-  const accent=ACCENTS[currentAccent]||ACCENTS.green;
-  const manifest={
-    name:'たべぐら',short_name:'たべぐら',display:'standalone',
-    background_color:'#121212',theme_color:accent.hex,start_url:'.',
-    icons:[{src:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="'+encodeURIComponent(accent.hex)+'"/><text y=".9em" font-size="80" x="10">🍽</text></svg>',sizes:'any',type:'image/svg+xml'}]
-  };
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  document.getElementById('manifestLink').href=url;
+  updateThemeColorMeta();
+}
+function updateThemeColorMeta(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.getElementById('metaTheme').content=isDark?'#121212':'#f7f8fc';
 }
 
 // ── NAV ──
